@@ -25,8 +25,10 @@ def main():
     p.add_argument("--alias", default="champion")
     args = p.parse_args()
 
+    # Both URIs explicit: newer MLflow defaults tracking to a local sqlite DB otherwise
+    mlflow.set_tracking_uri("databricks")
     mlflow.set_registry_uri("databricks-uc")
-    client = MlflowClient(registry_uri="databricks-uc")
+    client = MlflowClient(tracking_uri="databricks", registry_uri="databricks-uc")
     mv = client.get_model_version_by_alias(args.model, args.alias)
     print(f"{args.model}@{args.alias} -> version {mv.version} (run {mv.run_id})")
 

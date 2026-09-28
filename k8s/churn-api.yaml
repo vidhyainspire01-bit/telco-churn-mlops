@@ -1,0 +1,80 @@
+# Telco churn API on AKS: namespace, deployment, public service, autoscaler.
+# IMAGE_PLACEHOLDER is replaced at deploy time (sed now, CI in phase 8).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: churn
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churn-api
+  namespace: churn
+  labels: {app: churn-api}
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5            # keeps old ReplicaSets -> `kubectl rollout undo` works
+  selector:
+    matchLabels: {app: churn-api}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0              # never drop below desired capacity during a rollout
+      maxSurge: 1
+  template:
+    metadata:
+      labels: {app: churn-api}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: api
+          image: IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 8000
+          resources:
+            requests: {cpu: 100m, memory: 300Mi}
+            limits:   {cpu: 500m, memory: 768Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+          readinessProbe:            # traffic only after the model is loaded (/ready returns 503 until then)
+            httpGet: {path: /ready, port: 8000}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:             # restart if the process hangs
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: churn-api
+  namespace: churn
+spec:
+  type: LoadBalancer                 # public IP for the lab; in production: internal LB or ingress + auth
+  selector: {app: churn-api}
+  ports:
+    - port: 80
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: churn-api
+  namespace: churn
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: churn-api
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 70}

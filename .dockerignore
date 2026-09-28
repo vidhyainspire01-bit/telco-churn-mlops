@@ -1,0 +1,9 @@
+.git
+notebooks/
+tests/
+**/__pycache__
+**/*.pyc
+.venv/
+venv/
+mlruns/
+*.csv

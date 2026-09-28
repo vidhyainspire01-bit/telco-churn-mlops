@@ -1,0 +1,4 @@
+# API layer only. Model libraries (scikit-learn, lightgbm, mlflow, pandas...) come from
+# model/requirements.txt, which MLflow recorded at training time -> serving matches training.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0

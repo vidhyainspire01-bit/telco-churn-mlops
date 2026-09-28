@@ -1,0 +1,5 @@
+
+# exported model is a build artifact, never committed
+serving/model/
+mlruns/
+.env

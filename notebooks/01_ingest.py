@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "6"
+# ///
 # MAGIC %md
 # MAGIC # 01 - Ingest: raw CSV -> bronze -> silver
 # MAGIC - **Bronze**: file as-is (all strings) + ingestion metadata. Never cleaned, so we can always replay.
